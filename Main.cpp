@@ -24,7 +24,7 @@ vec4 offset;
 
 void Display(void)
 {
-    // очищаем буфер кадра
+    // отчищаем буфер кадра
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // включаем тест глубины (на всякий случай)
@@ -153,7 +153,6 @@ float getSimulationTime()
     return delta / Freq.QuadPart;
 };
 
-// управление прямоугольником с помощью WASD
 void input(float deltaTime) 
 {
     if (GetAsyncKeyState(87))  // W

@@ -10,18 +10,20 @@
 #include "Shader.h"
 
 using namespace std;
+using namespace glm;
 
 bool Shader::load(string vertexShaderFilename, string fragmentShaderFilename)
 {
     // Cоздаем шейдерную программу
     program = glCreateProgram();
 
-    // вершинный шейдерный объект
-    createShaderObject(GL_VERTEX_SHADER, vertexShaderFilename);
-    glAttachShader(program, shader);
 
     // фрагментный шейдерный объект
-    createShaderObject(GL_FRAGMENT_SHADER, fragmentShaderFilename);
+    shader = createShaderObject(GL_FRAGMENT_SHADER, fragmentShaderFilename);
+    glAttachShader(program, shader);
+
+    // вершинный шейдерный объект
+    shader = createShaderObject(GL_VERTEX_SHADER, vertexShaderFilename);
     glAttachShader(program, shader);
 
     // Линковка
@@ -44,7 +46,7 @@ bool Shader::load(string vertexShaderFilename, string fragmentShaderFilename)
 
 GLuint Shader::createShaderObject(GLenum shaderType, std::string filename)
 {
-    shader = glCreateShader(shaderType);
+    GLuint sh = glCreateShader(shaderType);
     // подразумевается, что в шейдерной программе не более 10000 знаков
     char source[10000];
 
@@ -59,18 +61,22 @@ GLuint Shader::createShaderObject(GLenum shaderType, std::string filename)
     // передача текста шейдера в шейдерный объект
     char* src[1] = { source };
 
-    glShaderSource(shader, 1, (const char**)src, NULL);
-    glCompileShader(shader);
-    GLint compileStatus = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
+    glShaderSource(sh, 1, (const char**)src, NULL);
+    glCompileShader(sh);
+    GLint compileStatus;
+    glGetShaderiv(sh, GL_COMPILE_STATUS, &compileStatus);
 
     if (compileStatus != GL_TRUE)
     {
         char errorMessage[300];
         GLsizei errorMsgLen;
-        glGetShaderInfoLog(shader, 300, &errorMsgLen, errorMessage);
+        glGetShaderInfoLog(sh, 300, &errorMsgLen, errorMessage);
         cout << errorMessage << endl;
         return false;
+    }
+    else 
+    {
+        return sh;
     }
 }
 
@@ -86,13 +92,7 @@ void Shader::deactivate()
 
 void Shader::setUniform(std::string name, glm::vec4& value)
 {
-    GLint location = getUniformLocation(name);
+    GLint location = glGetUniformLocation(program, name.c_str());
     glUniform4f(location, value.r, value.g, value.b, value.a);
-    this->uniforms[name] = location;
-}
-
-GLuint Shader::getUniformLocation(std::string name)
-{
-    return glGetUniformLocation(program, name.c_str());
 }
 

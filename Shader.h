@@ -34,13 +34,7 @@ private:
     // шейдерный объект
     GLuint shader;
 
-    // "справочник" uniform-переменных, который определяет ранее запомненное соответствие между именем uniform-переменной и её индексом (location)
-    std::map <std::string, GLuint> uniforms;
-
-private:
     // Создание шейдерного объекта и загрузка текста шейдера из файла
     GLuint createShaderObject(GLenum shaderType, std::string filename);
-    // получение индекса (location) uniform-переменной
-    GLuint getUniformLocation(std::string name);
 };
 
