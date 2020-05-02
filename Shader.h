@@ -33,8 +33,10 @@ private:
     GLuint program;
     // шейдерный объект
     GLuint shader;
-
+    std::map<std::string, GLuint>uniforms; // хранит имя переменной и ее location
     // Создание шейдерного объекта и загрузка текста шейдера из файла
     GLuint createShaderObject(GLenum shaderType, std::string filename);
+    // получение индекса (location) uniform-переменной
+    GLuint getUniformLocation(std::string name);
 };
 

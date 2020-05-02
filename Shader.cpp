@@ -92,7 +92,19 @@ void Shader::deactivate()
 
 void Shader::setUniform(std::string name, glm::vec4& value)
 {
-    GLint location = glGetUniformLocation(program, name.c_str());
+    GLint location = getUniformLocation(name);
     glUniform4f(location, value.r, value.g, value.b, value.a);
 }
 
+GLuint Shader::getUniformLocation(string name) 
+{
+    auto it = uniforms.find(name);
+    if (it != uniforms.end())
+    {
+        return it->second;
+    }
+    else 
+    {
+        uniforms.insert(make_pair(name, glGetUniformLocation(program, name.c_str())));
+    }
+}
