@@ -1,13 +1,4 @@
 #include "Shader.h"
-#include <iostream>
-#include <fstream>
-#include <windows.h>
-#include <glew.h>
-#include <GL/freeglut.h> 
-#include <GL/glut.h>
-#include <GL/gl.h> 
-#include "glm/glm.hpp"
-#include "Shader.h"
 
 using namespace std;
 using namespace glm;
@@ -96,6 +87,13 @@ void Shader::setUniform(std::string name, glm::vec4& value)
     glUniform4f(location, value.r, value.g, value.b, value.a);
 }
 
+void Shader::setUniform(std::string name, glm::mat4& value)
+{
+    GLint location = getUniformLocation(name);
+    glUniformMatrix4fv(uniforms[name], 1, GL_FALSE, value_ptr(value));
+
+}
+
 GLuint Shader::getUniformLocation(string name) 
 {
     auto it = uniforms.find(name);
@@ -105,6 +103,8 @@ GLuint Shader::getUniformLocation(string name)
     }
     else 
     {
-        uniforms.insert(make_pair(name, glGetUniformLocation(program, name.c_str())));
+        GLint loc = glGetUniformLocation(program, name.c_str());
+        uniforms.insert(make_pair(name, loc));
+        return loc;
     }
 }

@@ -1,13 +1,15 @@
 #pragma once
-
+#include <windows.h>
+#include <fstream>
 #include <iostream>
 #include <string>
-#include <windows.h>
 #include <glew.h>
 #include <GL/freeglut.h> 
 #include <GL/glut.h>
 #include <GL/gl.h> 
 #include "glm/glm.hpp"
+#include "glm/gtc/type_ptr.hpp"
+
 #include <map>
 
 class Shader
