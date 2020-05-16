@@ -33,26 +33,50 @@ float mouse_sensitivity = 50; // camera rotate speed
 POINT oldCursPos;
 POINT newCursPos;
 
-const int modelCount = 3;
+const int modelCount = 7;
 mat4 modelMatrices[modelCount] =
 {
     mat4(
-        vec4(1, 0, 0, 0), // Направление оси ox
-        vec4(0, 1, 0, 0), // направление оси oy
-        vec4(0, 0, 1, 0), // направление оси oz
-        vec4(2.5, 0, 0, 1)), // позиция объекта (начало координат)
+        vec4(1, 0, 0, 0),
+        vec4(0, 1, 0, 0),
+        vec4(0, 0, 1, 0),
+        vec4(0, 0, 0, 1)),
 
     mat4(
         vec4(1, 0, 0, 0),
         vec4(0, 1, 0, 0),
         vec4(0, 0, 1, 0),
-        vec4(-1, 0, -1.5, 1)),
+        vec4(1.5, 0, 0, 1)),
 
     mat4(
         vec4(1, 0, 0, 0),
         vec4(0, 1, 0, 0),
         vec4(0, 0, 1, 0),
-        vec4(1, 0, 0, 1))
+        vec4(-1.5, 0, 0, 1)),
+
+    mat4(
+        vec4(1, 0, 0, 0),
+        vec4(0, 1, 0, 0),
+        vec4(0, 0, 1, 0),
+        vec4(0, 0, 1.5, 1)),
+
+    mat4(
+        vec4(1, 0, 0, 0),
+        vec4(0, 1, 0, 0),
+        vec4(0, 0, 1, 0),
+        vec4(1.5, 0, 1.5, 1)),
+
+    mat4(
+        vec4(1, 0, 0, 0),
+        vec4(0, 1, 0, 0),
+        vec4(0, 0, 1, 0),
+        vec4(-1.5, 0, 1.5, 1)),
+
+    mat4(
+        vec4(1, 0, 0, 0),
+        vec4(0, 1, 0, 0),
+        vec4(0, 0, 1, 0),
+        vec4(-1.5, 1.5, 1.5, 1))  
 };
 
 vec4 modelColors[modelCount] = 
@@ -60,6 +84,10 @@ vec4 modelColors[modelCount] =
     vec4(1, 0, 0, 1),
     vec4(0, 1, 0.5, 1),
     vec4(0, 0, 1, 1),
+    vec4(1, 1, 0, 1),
+    vec4(0.5, 0.5, 0, 1),
+    vec4(1, 0, 1, 1),
+    vec4(0, 0, 0.2, 1)
 };
 
 void main(int argc, char** argv)
@@ -169,7 +197,6 @@ void Simulation()
     glutPostRedisplay();
     glutIdleFunc(Simulation);
 }
-
 
 // вывод куба
 void drawCube()
