@@ -12,6 +12,9 @@
 
 #include "Shader.h"
 #include "Camera.h"
+#include "Mesh.h"
+#include "ResourceManager.h"
+#include "GraphicObject.h"
 
 using namespace std;
 using namespace glm;
@@ -23,6 +26,7 @@ void drawCube();
 float getSimulationTime();
 void input(float);
 void mouseWheel(int wheel, int direction, int x, int y);
+void initGraphicObjects();
 
 Shader shader;
 Camera camera;
@@ -33,62 +37,7 @@ float mouse_sensitivity = 50; // camera rotate speed
 POINT oldCursPos;
 POINT newCursPos;
 
-const int modelCount = 7;
-mat4 modelMatrices[modelCount] =
-{
-    mat4(
-        vec4(1, 0, 0, 0),
-        vec4(0, 1, 0, 0),
-        vec4(0, 0, 1, 0),
-        vec4(0, 0, 0, 1)),
-
-    mat4(
-        vec4(1, 0, 0, 0),
-        vec4(0, 1, 0, 0),
-        vec4(0, 0, 1, 0),
-        vec4(1.5, 0, 0, 1)),
-
-    mat4(
-        vec4(1, 0, 0, 0),
-        vec4(0, 1, 0, 0),
-        vec4(0, 0, 1, 0),
-        vec4(-1.5, 0, 0, 1)),
-
-    mat4(
-        vec4(1, 0, 0, 0),
-        vec4(0, 1, 0, 0),
-        vec4(0, 0, 1, 0),
-        vec4(0, 0, 1.5, 1)),
-
-    mat4(
-        vec4(1, 0, 0, 0),
-        vec4(0, 1, 0, 0),
-        vec4(0, 0, 1, 0),
-        vec4(1.5, 0, 1.5, 1)),
-
-    mat4(
-        vec4(1, 0, 0, 0),
-        vec4(0, 1, 0, 0),
-        vec4(0, 0, 1, 0),
-        vec4(-1.5, 0, 1.5, 1)),
-
-    mat4(
-        vec4(1, 0, 0, 0),
-        vec4(0, 1, 0, 0),
-        vec4(0, 0, 1, 0),
-        vec4(-1.5, 1.5, 1.5, 1))  
-};
-
-vec4 modelColors[modelCount] = 
-{
-    vec4(1, 0, 0, 1),
-    vec4(0, 1, 0.5, 1),
-    vec4(0, 0, 1, 1),
-    vec4(1, 1, 0, 1),
-    vec4(0.5, 0.5, 0, 1),
-    vec4(1, 0, 1, 1),
-    vec4(0, 0, 0.2, 1)
-};
+vector<GraphicObject>graphicObjects;
 
 void main(int argc, char** argv)
 {
@@ -109,7 +58,7 @@ void main(int argc, char** argv)
     glutInitWindowSize(w, h);
 
     // создание окна
-    glutCreateWindow("LAB#2");
+    glutCreateWindow("LAB#3");
 
     // инициализация GLEW
     GLenum err = glewInit();
@@ -127,6 +76,10 @@ void main(int argc, char** argv)
 
     // загрузка шейдера
     shader.load("Shaders\\Example.vsh", "Shaders\\Example.fsh");
+
+    // инициализация графических объектов
+    initGraphicObjects();
+
     // устанавливаем функцию, которая будет вызываться для перерисовки окна
     glutDisplayFunc(Display);
     // устанавливаем функцию, которая будет вызываться при изменении размеров окна
@@ -166,15 +119,16 @@ void Display(void)
     mat4& viewMatrix = camera.getViewMatrix();
 
     // выводим все объекты
-    for (int i = 0; i < modelCount; i++) 
-    {
+    for (int i = 0; i < graphicObjects.size(); i++) {
         // устанавливаем матрицу наблюдения модели
-        mat4 modelViewMatrix = viewMatrix * modelMatrices[i];
+        mat4 modelViewMatrix = viewMatrix * graphicObjects[i].getModelMatrix();
         shader.setUniform("modelViewMatrix", modelViewMatrix);
         // устанавливаем цвет
-        shader.setUniform("color", modelColors[i]);
-        // выводим модель
-        drawCube();
+        shader.setUniform("color", graphicObjects[i].getColor());
+        // выводим меш
+        int meshId = graphicObjects[i].getMeshId();
+        Mesh* mesh = ResourceManager::instance().getMesh(meshId);
+        if (mesh != nullptr) mesh->draw();
     }
 
     // меняем буферы
@@ -314,5 +268,65 @@ void mouseWheel(int wheel, int direction, int x, int y)
     // определяем, на сколько необходимо приблизить/удалить камеру
     float delta = -direction * scrollSpeed;
     camera.zoom(delta);
+}
+
+// вспомогательная функция для инициализации графических объектов
+void initGraphicObjects()
+{
+    // ссылка на менеджер ресурсов (для удобства)
+    ResourceManager& rm = ResourceManager::instance();
+    // временная переменная для хранения идентификаторов меша
+    int meshId = -1;
+    // временная переменная для представления графического объекта
+    GraphicObject graphicObject;
+    // добавление графического объекта
+    meshId = rm.loadMesh("meshes/buildings/house_2.obj");
+    graphicObject.setMesh(meshId);
+    graphicObject.setColor(vec4(0.2f, 0.2f, 0.2f, 1.0f));
+    graphicObject.setPosition(vec3(0, 0, 0));
+    graphicObject.setAngle(0.0);
+    graphicObjects.push_back(graphicObject);
+    // добавление графического объекта
+    meshId = rm.loadMesh("meshes/natures/big_tree.obj");
+    graphicObject.setMesh(meshId);
+    graphicObject.setColor(vec4(0.2, 0.8, 0.2, 1));
+    graphicObject.setPosition(vec3(7.5, -0.75, 2.5));
+    graphicObject.setAngle(0.0);
+    graphicObjects.push_back(graphicObject);
+    // добавление графического объекта
+    meshId = rm.loadMesh("meshes/natures/big_tree.obj");
+    graphicObject.setMesh(meshId);
+    graphicObject.setColor(vec4(0.2, 0.8, 0.2, 1));
+    graphicObject.setPosition(vec3(-7.5, -0.75, 2.5));
+    graphicObject.setAngle(0.0);
+    graphicObjects.push_back(graphicObject);
+    // добавление графического объекта
+    meshId = rm.loadMesh("meshes/vehicles/police_car.obj");
+    graphicObject.setMesh(meshId);
+    graphicObject.setColor(vec4(0.2, 0.2, 1.0, 1));
+    graphicObject.setPosition(vec3(+4.5, -2.15, +6.5));
+    graphicObject.setAngle(-115.0);
+    graphicObjects.push_back(graphicObject);
+    // добавление графического объекта
+    meshId = rm.loadMesh("meshes/vehicles/police_car.obj");
+    graphicObject.setMesh(meshId);
+    graphicObject.setColor(vec4(0.23, 0.23, 1.0, 1));
+    graphicObject.setPosition(vec3(+4.25, -2.15, +10.5));
+    graphicObject.setAngle(+105.0);
+    graphicObjects.push_back(graphicObject);
+    // добавление графического объекта
+    meshId = rm.loadMesh("meshes/vehicles/jeep.obj");
+    graphicObject.setMesh(meshId);
+    graphicObject.setColor(vec4(0.95, 0.13, 0.13, 1));
+    graphicObject.setPosition(vec3(-1.25, -2.15, +9.0));
+    graphicObject.setAngle(+170.0);
+    graphicObjects.push_back(graphicObject);
+    // добавление графического объекта
+    meshId = rm.loadMesh("meshes/vehicles/jeep.obj");
+    graphicObject.setMesh(meshId);
+    graphicObject.setColor(vec4(0.7, 0.9, 0.13, 1));
+    graphicObject.setPosition(vec3(-4.25, -2.15, +10.0));
+    graphicObject.setAngle(+100.0);
+    graphicObjects.push_back(graphicObject);
 }
 
