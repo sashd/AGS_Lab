@@ -25,10 +25,13 @@ public:
     void deactivate();
 
     // Установка uniform-переменных
-    void setUniform(std::string name, glm::vec4& value);
+    void setUniform(std::string name, glm::vec4 value);
 
-    // Установка uniform-переменных
-    void setUniform(std::string name, glm::mat4& value);
+    void setUniform(std::string name, glm::mat4 value);
+
+    void setUniform(std::string name, float value);
+
+    void setUniform(std::string name, glm::vec2 value);
 
 private:
     // шейдерная программа (шейдер)

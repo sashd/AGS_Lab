@@ -15,6 +15,9 @@
 #include "Mesh.h"
 #include "ResourceManager.h"
 #include "GraphicObject.h"
+#include "Material.h"
+#include "Light.h"
+#include "RenderManager.h"
 
 using namespace std;
 using namespace glm;
@@ -22,21 +25,25 @@ using namespace glm;
 void Display(void);
 void Reshape(int w, int h);
 void Simulation();
-void drawCube();
 float getSimulationTime();
 void input(float);
 void mouseWheel(int wheel, int direction, int x, int y);
 void initGraphicObjects();
 
-Shader shader;
-Camera camera;
 float w = 800.0f, h = 600.0f; // разрешение экрана
-float moveSpeed = 0.05f; // camera move speed
+float moveSpeed = 0.01f; // camera move speed
 float scrollSpeed = 0.5f; // camera zoom speed
-float mouse_sensitivity = 50; // camera rotate speed
+float mouse_sensitivity = 100; // camera rotate speed
 POINT oldCursPos;
 POINT newCursPos;
 
+RenderManager& renderManager = RenderManager::instance();
+ResourceManager& resourceManager = ResourceManager::instance();
+
+Camera camera;
+Light light;
+
+Shader shader;
 vector<GraphicObject>graphicObjects;
 
 void main(int argc, char** argv)
@@ -58,7 +65,7 @@ void main(int argc, char** argv)
     glutInitWindowSize(w, h);
 
     // создание окна
-    glutCreateWindow("LAB#3");
+    glutCreateWindow("");
 
     // инициализация GLEW
     GLenum err = glewInit();
@@ -71,14 +78,9 @@ void main(int argc, char** argv)
     // определение текущей версии OpenGL
     printf("OpenGL Version = %s\n\n", glGetString(GL_VERSION));
 
-    // установка позиции камеры
     camera.setPosition(vec3(10, 1, 1));
-
-    // загрузка шейдера
-    shader.load("Shaders\\Example.vsh", "Shaders\\Example.fsh");
-
-    // инициализация графических объектов
-    initGraphicObjects();
+    initGraphicObjects();  // загрузка всех графический объектов в вектор
+    renderManager.init();  // инициализация менеджера рендера
 
     // устанавливаем функцию, которая будет вызываться для перерисовки окна
     glutDisplayFunc(Display);
@@ -94,45 +96,33 @@ void main(int argc, char** argv)
     return;
 }
 
+// функция для построения изображения на экране (вызывается при перерисовке окна)
 void Display(void)
 {
-    // очищаем буфер кадра
-    glClearColor(0.7, 0.7, 0.7, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderManager.start();
 
-    // включаем тест глубины (на всякий случай)
-    glEnable(GL_DEPTH_TEST);
+    renderManager.setCamera(&camera);
+    renderManager.setLight(&light);
 
-    // некоторые дополнительные параметры рендеринга
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-
-    // активируем шейдер, используемый для вывода объекта
-    shader.activate();
-
-    // устанавливаем матрицу проекции
-    mat4& projectionMatrix = camera.getProjectionMatrix();
-    shader.setUniform("projectionMatrix", projectionMatrix);
-
-    // получаем матрицу камеры
-    mat4& viewMatrix = camera.getViewMatrix();
-
-    // выводим все объекты
-    for (int i = 0; i < graphicObjects.size(); i++) {
-        // устанавливаем матрицу наблюдения модели
-        mat4 modelViewMatrix = viewMatrix * graphicObjects[i].getModelMatrix();
-        shader.setUniform("modelViewMatrix", modelViewMatrix);
-        // устанавливаем цвет
-        shader.setUniform("color", graphicObjects[i].getColor());
-        // выводим меш
-        int meshId = graphicObjects[i].getMeshId();
-        Mesh* mesh = ResourceManager::instance().getMesh(meshId);
-        if (mesh != nullptr) mesh->draw();
+    // добавляем в очередь все объекты, которые необходимо вывести
+    for (int i = 0; i < graphicObjects.size(); i++) 
+    {
+        renderManager.addToRenderQueue(&graphicObjects[i]);
     }
 
-    // меняем буферы
+    // завершаем построение кадра
+    renderManager.finish();
+
+    // меняем передний и задний буферы цвета
     glutSwapBuffers();
+
+    // выводим количество FPS
+    char tempStr[128];
+    sprintf_s(tempStr, "[%06.2f FPS] Lab4", renderManager.getFPS());
+    glutSetWindowTitle(tempStr);
+    glutSwapBuffers();
+
+
 }
 
 // функция, вызываемая при изменении размеров окна
@@ -150,60 +140,6 @@ void Simulation()
     input(getSimulationTime());
     glutPostRedisplay();
     glutIdleFunc(Simulation);
-}
-
-// вывод куба
-void drawCube()
-{
-    // переменные для вывода объекта (прямоугольника из двух треугольников)
-    static GLuint VAO_Index = 0; // индекс VAO-буфера
-    static GLuint VBO_Index = 0; // индекс VBO-буфера
-    static int VertexCount = 0; // количество вершин
-    static bool init = true;
-    if (init) {
-        // создание и заполнение VBO
-        glGenBuffers(1, &VBO_Index);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO_Index);
-        GLfloat Verteces[] = {
-            // передняя грань (два треугольника)
-            -0.5, +0.5, +0.5, -0.5, -0.5, +0.5, +0.5, +0.5, +0.5,
-            +0.5, +0.5, +0.5, -0.5, -0.5, +0.5, +0.5, -0.5, +0.5,
-            // задняя грань (два треугольника)
-            +0.5, +0.5, -0.5, +0.5, -0.5, -0.5, -0.5, +0.5, -0.5,
-            -0.5, +0.5, -0.5, +0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
-            // правая грань (два треугольника)
-            +0.5, -0.5, +0.5, +0.5, -0.5, -0.5, +0.5, +0.5, +0.5,
-            +0.5, +0.5, +0.5, +0.5, -0.5, -0.5, +0.5, +0.5, -0.5,
-            // левая грань (два треугольника)
-            -0.5, +0.5, +0.5, -0.5, +0.5, -0.5, -0.5, -0.5, +0.5,
-            -0.5, -0.5, +0.5, -0.5, +0.5, -0.5, -0.5, -0.5, -0.5,
-            // верхняя грань (два треугольника)
-            -0.5, +0.5, -0.5, -0.5, +0.5, +0.5, +0.5, +0.5, -0.5,
-            +0.5, +0.5, -0.5, -0.5, +0.5, +0.5, +0.5, +0.5, +0.5,
-            // нижняя грань (два треугольника)
-            -0.5, -0.5, +0.5, -0.5, -0.5, -0.5, +0.5, -0.5, +0.5,
-            +0.5, -0.5, +0.5, -0.5, -0.5, -0.5, +0.5, -0.5, -0.5
-        };
-        glBufferData(GL_ARRAY_BUFFER, sizeof(Verteces), Verteces, GL_STATIC_DRAW);
-        // создание VAO
-        glGenVertexArrays(1, &VAO_Index);
-        glBindVertexArray(VAO_Index);
-        // инициализация VAO
-        glBindBuffer(GL_ARRAY_BUFFER, VBO_Index);
-        int location = 0;
-        glVertexAttribPointer(location, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(location);
-
-        // "отвязка" буфера VAO
-        glBindVertexArray(0);
-
-        // указание количество вершин
-        VertexCount = 6 * 6;
-        init = false;
-    }
-    // вывод модели на экран
-    glBindVertexArray(VAO_Index);
-    glDrawArrays(GL_TRIANGLES, 0, VertexCount);
 }
 
 // Получить deltaTime
@@ -273,60 +209,52 @@ void mouseWheel(int wheel, int direction, int x, int y)
 // вспомогательная функция для инициализации графических объектов
 void initGraphicObjects()
 {
-    // ссылка на менеджер ресурсов (для удобства)
-    ResourceManager& rm = ResourceManager::instance();
     // временная переменная для хранения идентификаторов меша
     int meshId = -1;
     // временная переменная для представления графического объекта
     GraphicObject graphicObject;
     // добавление графического объекта
-    meshId = rm.loadMesh("meshes/buildings/house_2.obj");
+    meshId = resourceManager.loadMesh("meshes/buildings/house_2.obj");
     graphicObject.setMesh(meshId);
     graphicObject.setColor(vec4(0.2f, 0.2f, 0.2f, 1.0f));
     graphicObject.setPosition(vec3(0, 0, 0));
     graphicObject.setAngle(0.0);
     graphicObjects.push_back(graphicObject);
     // добавление графического объекта
-    meshId = rm.loadMesh("meshes/natures/big_tree.obj");
+    meshId = resourceManager.loadMesh("meshes/natures/big_tree.obj");
     graphicObject.setMesh(meshId);
     graphicObject.setColor(vec4(0.2, 0.8, 0.2, 1));
     graphicObject.setPosition(vec3(7.5, -0.75, 2.5));
     graphicObject.setAngle(0.0);
     graphicObjects.push_back(graphicObject);
     // добавление графического объекта
-    meshId = rm.loadMesh("meshes/natures/big_tree.obj");
+    meshId = resourceManager.loadMesh("meshes/natures/big_tree.obj");
     graphicObject.setMesh(meshId);
     graphicObject.setColor(vec4(0.2, 0.8, 0.2, 1));
     graphicObject.setPosition(vec3(-7.5, -0.75, 2.5));
     graphicObject.setAngle(0.0);
     graphicObjects.push_back(graphicObject);
     // добавление графического объекта
-    meshId = rm.loadMesh("meshes/vehicles/police_car.obj");
+    meshId = resourceManager.loadMesh("meshes/vehicles/police_car.obj");
     graphicObject.setMesh(meshId);
     graphicObject.setColor(vec4(0.2, 0.2, 1.0, 1));
     graphicObject.setPosition(vec3(+4.5, -2.15, +6.5));
     graphicObject.setAngle(-115.0);
     graphicObjects.push_back(graphicObject);
     // добавление графического объекта
-    meshId = rm.loadMesh("meshes/vehicles/police_car.obj");
+    meshId = resourceManager.loadMesh("meshes/vehicles/police_car.obj");
     graphicObject.setMesh(meshId);
     graphicObject.setColor(vec4(0.23, 0.23, 1.0, 1));
     graphicObject.setPosition(vec3(+4.25, -2.15, +10.5));
     graphicObject.setAngle(+105.0);
     graphicObjects.push_back(graphicObject);
     // добавление графического объекта
-    meshId = rm.loadMesh("meshes/vehicles/jeep.obj");
+    meshId = resourceManager.loadMesh("meshes/vehicles/jeep.obj");
     graphicObject.setMesh(meshId);
     graphicObject.setColor(vec4(0.95, 0.13, 0.13, 1));
     graphicObject.setPosition(vec3(-1.25, -2.15, +9.0));
     graphicObject.setAngle(+170.0);
     graphicObjects.push_back(graphicObject);
-    // добавление графического объекта
-    meshId = rm.loadMesh("meshes/vehicles/jeep.obj");
-    graphicObject.setMesh(meshId);
-    graphicObject.setColor(vec4(0.7, 0.9, 0.13, 1));
-    graphicObject.setPosition(vec3(-4.25, -2.15, +10.0));
-    graphicObject.setAngle(+100.0);
-    graphicObjects.push_back(graphicObject);
+
 }
 

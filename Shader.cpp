@@ -81,17 +81,29 @@ void Shader::deactivate()
     glUseProgram(0);
 }
 
-void Shader::setUniform(std::string name, glm::vec4& value)
+void Shader::setUniform(string name, vec4 value)
 {
     GLint location = getUniformLocation(name);
     glUniform4f(location, value.r, value.g, value.b, value.a);
 }
 
-void Shader::setUniform(std::string name, glm::mat4& value)
+void Shader::setUniform(string name, mat4 value)
 {
     GLint location = getUniformLocation(name);
     glUniformMatrix4fv(uniforms[name], 1, GL_FALSE, value_ptr(value));
 
+}
+
+void Shader::setUniform(string name, float value)
+{
+    uniforms[name] = getUniformLocation(name);
+    glUniform1f(uniforms[name], value);
+}
+
+void Shader::setUniform(string name, vec2 value)
+{
+    uniforms[name] = getUniformLocation(name);
+    glUniformMatrix2fv(uniforms[name], 1, GL_FALSE, value_ptr(value));
 }
 
 GLuint Shader::getUniformLocation(string name) 

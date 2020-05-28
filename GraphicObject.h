@@ -1,5 +1,6 @@
 #pragma once
 #include "Mesh.h"
+#include "Material.h"
 
 // КЛАСС ДЛЯ РАБОТЫ С ГРАФИЧЕСКИМ ОБЪЕКТОМ
 class GraphicObject
@@ -20,6 +21,10 @@ public:
     // установить угол поворота в градусах относительно оси OY по часовой стрелке
     void setAngle(float angle);
 
+    // установить и получить используемый материал
+    void setMaterial(Material& material);
+    Material& getMaterial();
+
     // получить различные параметры
     int getMeshId();
 
@@ -32,6 +37,9 @@ private:
 
     // положение
     glm::vec3 position;
+
+    // материал
+    Material material;
 
     // угол поворота
     float angle;

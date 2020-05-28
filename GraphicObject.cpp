@@ -49,6 +49,16 @@ mat4& GraphicObject::getModelMatrix()
     return modelMatrix;
 }
 
+void GraphicObject::setMaterial(Material& material)
+{
+    this->material = material;
+}
+
+Material& GraphicObject::getMaterial()
+{
+    return material;
+}
+
 void GraphicObject::updModelMatrix() 
 {
     modelMatrix = translate(this->position) * rotate(radians(this->angle), vec3(0.0f, 1.0f, 0.0f));

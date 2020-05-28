@@ -9,7 +9,7 @@ int ResourceManager::loadMesh(string filename)
     if (id != meshes_id.end())
     {
         // загружаем меш, который уже есть
-        cout << "Loaded existing mesh\n";
+        cout << "Loaded existing mesh" << endl;
         return id->second;
     }
     // если меш не найден, добавляем в коллекцию
